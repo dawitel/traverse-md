@@ -1,6 +1,6 @@
 {
   "name": "traverse-md",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "a command line tool to get the folder structure of your project for your readme file",
   "main": "index.js",
   "scripts": {
