@@ -1,103 +1,139 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import readline from "readline";
+import chalk from "chalk";
+
+const defaultIgnoreDirs = [
+  ".git",
+  ".next",
+  "node_modules",
+  "vendor",
+  "logs",
+  "dist",
+  "__pycache__",
+  ".DS_Store",
+];
 
 /**
- * Generates a string representation of the directory structure at the given path.
- * This string will be formatted with ASCII tree characters to visually represent
- * the directory structure.
- *
- * @param {string} dirPath - The path to the directory you want to get the structure of.
- * @param {string} [prefix=""] - Used internally to track the recursion depth and
- *   generate the correct indent and tree characters.
- * @returns {string} A string representation of the directory structure.
+ * Generates a directory structure as a markdown string from the given directory path.
+ * @param {string} dirPath The path to the directory to generate the structure from.
+ * @param {string[]} ignoreDirs A list of directories to ignore in the structure.
+ * @returns {string} The generated directory structure as a markdown string.
  */
+function generateDirectoryStructure(dirPath, ignoreDirs) {
+  const structure = [];
 
-function getDirectoryStructure(dirPath, prefix = "") {
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  let output = "";
+  function traverse(currentPath, prefix = "") {
+    const items = fs
+      .readdirSync(currentPath)
+      .filter((item) => !ignoreDirs.includes(item));
 
-  entries.forEach((entry, index) => {
-    const isLastEntry = index === entries.length - 1;
-    const connector = isLastEntry ? "└── " : "├── ";
-    const newPrefix = prefix + (isLastEntry ? "    " : "│   ");
+    items.forEach((item, index) => {
+      const itemPath = path.join(currentPath, item);
+      const isLast = index === items.length - 1;
+      const prefixSymbol = isLast ? "└── " : "├── ";
+      const childPrefix = isLast ? "    " : "│   ";
 
-    const line = `${prefix}${connector}${entry.name}`;
+      structure.push(prefix + prefixSymbol + item);
 
-    if (entry.isDirectory()) {
-      output += `${line}/\n`; 
-      output += getDirectoryStructure(
-        path.join(dirPath, entry.name),
-        newPrefix
-      );
-    } else {
-      output += `${line}\n`; 
-    }
+      if (fs.statSync(itemPath).isDirectory()) {
+        traverse(itemPath, prefix + childPrefix);
+      }
+    });
+  }
+
+  traverse(dirPath);
+  return structure.join("\n");
+}
+
+/**
+ * Updates a README.md file by replacing the existing directory structure
+ * with the given directory structure.
+ * @param {string} dirStructure The directory structure as a markdown string.
+ * @param {string} readmePath The path to the README.md file to update.
+ */
+function updateReadmeFile(dirStructure, readmePath) {
+  const readmeContent = fs.existsSync(readmePath)
+    ? fs.readFileSync(readmePath, "utf8")
+    : "";
+
+  const updatedContent = readmeContent.replace(
+    /(\n|^)# Directory Structure(.|\n)*?# End Directory Structure/gm,
+    ""
+  );
+
+  const newReadmeContent =
+    updatedContent +
+    `\n# Directory Structure\n\n${dirStructure}\n\n# End Directory Structure`;
+
+  fs.writeFileSync(readmePath, newReadmeContent, "utf8");
+  console.log(chalk.green("Updated README.md with directory structure."));
+}
+
+/**
+ * Asks the user about any additional directories to ignore, and confirms
+ * the list of directories to ignore before continuing.
+ * @returns {Promise<{ignoreDirs: string[]}>} A promise that resolves to an
+ * object with a single property, `ignoreDirs`, which is an array of
+ * directory names to ignore.
+ */
+async function getUserOptions() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
   });
 
-  return output;
+  const askQuestion = (question) =>
+    new Promise((resolve) => rl.question(question, resolve));
+
+  const customIgnoreDirs = await askQuestion(
+    "Enter any additional directories to ignore, separated by commas (or press enter to skip): "
+  );
+  const ignoreDirs = customIgnoreDirs
+    ? [
+        ...defaultIgnoreDirs,
+        ...customIgnoreDirs.split(",").map((dir) => dir.trim()),
+      ]
+    : defaultIgnoreDirs;
+
+  const confirm = await askQuestion(
+    `The following directories will be ignored: ${ignoreDirs.join(
+      ", "
+    )}\nContinue? (Y/N): `
+  );
+
+  rl.close();
+
+  if (confirm.toLowerCase() !== "y") {
+    console.log(chalk.red("Operation cancelled by the user."));
+    process.exit(0);
+  }
+
+  return { ignoreDirs };
 }
 
 /**
- * Writes or updates the README.md file with the directory structure.
- * If the README.md exists, it will update the structure by replacing
- * the old one with the new one. If not, it will create the README.md
- * with the structure.
- * @param {string} dirPath - The path to the directory you want to get the structure of.
- * @param {string} structure - The string representation of the directory structure.
+ * The function takes two command-line arguments: the first is the directory
+ * path to generate the structure from (defaults to the current working
+ * directory), and the second is the path to the README file to update
+ * (defaults to the path of the directory structure).
+ *
+ * The function first prompts the user to enter any additional directories
+ * to ignore before generating the structure. The user is then asked to
+ * confirm the list of ignored directories before the structure is generated
+ * and written to the README file.
  */
-function writeOrUpdateReadme(dirPath, structure) {
+async function main() {
+  const args = process.argv.slice(2);
+  const dirPath = args[0] || ".";
   const readmePath = path.join(dirPath, "README.md");
-  const startMarker = "<!-- START OF DIRECTORY STRUCTURE -->";
-  const endMarker = "<!-- END OF DIRECTORY STRUCTURE -->";
-  const newContent = `${startMarker}\n\`\`\`\n${structure}\n\`\`\`\n${endMarker}`;
 
-  let readmeContent = "";
+  const { ignoreDirs } = await getUserOptions();
 
-  // Read the README.md content if it exists
-  if (fs.existsSync(readmePath)) {
-    readmeContent = fs.readFileSync(readmePath, "utf-8");
-
-    // Check if the structure markers already exist
-    const startIdx = readmeContent.indexOf(startMarker);
-    const endIdx = readmeContent.indexOf(endMarker);
-
-    if (startIdx !== -1 && endIdx !== -1) {
-      // Replace the old structure with the new one
-      readmeContent =
-        readmeContent.slice(0, startIdx) +
-        newContent +
-        readmeContent.slice(endIdx + endMarker.length);
-    } else {
-      // If markers are not found, append the structure at the end
-      readmeContent += `\n# Project Directory Structure\n${newContent}\n`;
-    }
-  } else {
-    // If README.md doesn't exist, create it with the structure
-    readmeContent = `# Project Directory Structure\n\n${newContent}\n`;
-  }
-
-  fs.writeFileSync(readmePath, readmeContent);
-  console.log("Directory structure updated in README.md!");
+  const dirStructure = generateDirectoryStructure(dirPath, ignoreDirs);
+  updateReadmeFile(dirStructure, readmePath);
 }
 
-/**
- * The main function of the program.
- * Gets the directory path from the arguments, ensures it exists, and then
- * calls getDirectoryStructure and writeOrUpdateReadme with the given path.
- */
-function main() {
-  const targetPath = process.argv[2] || "."; // Default to current directory if no path is given
-
-  if (!fs.existsSync(targetPath)) {
-    console.error(`Error: Path "${targetPath}" does not exist.`);
-    process.exit(1);
-  }
-
-  const directoryStructure = getDirectoryStructure(targetPath);
-  writeOrUpdateReadme(targetPath, directoryStructure);
-}
-
-// Execute main function
-main();
+main().catch((error) => console.error(chalk.red(error)));
