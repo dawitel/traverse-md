@@ -9,7 +9,7 @@
   },
   "type": "module",
   "bin": {
-    "traverse-md": "./index.js"
+    "traverse-md": "index.js"
   },
   "repository": {
     "type": "git",
