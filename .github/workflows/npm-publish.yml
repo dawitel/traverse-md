@@ -1,8 +1,9 @@
 name: traverse-md
 
 on:
-  release:
-    types: [created, published, edited]
+  push:
+    branches:
+      - main 
 jobs:
   build:
     runs-on: ubuntu-latest
