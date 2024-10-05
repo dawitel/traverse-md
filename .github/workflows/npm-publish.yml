@@ -1,9 +1,8 @@
-name: CI/CD Pipeline
+name: traverse-md
 
 on:
   release:
-    types: [created]
-
+    types: [created, published, edited]
 jobs:
   build:
     runs-on: ubuntu-latest
