@@ -52,6 +52,34 @@ Provide a specific path if you want to outline a different directory:
 npx traverse-md path/to/your-directory
 ```
 
+### Interactive Mode
+
+If you want to specify directories to ignore, run the command without arguments:
+
+```bash
+npx traverse-md
+```
+
+The tool will prompt you to enter:
+
+The path of the directory to traverse.
+
+- A list of directories to ignore, separated by commas.
+- Ignored Directories
+By default, the following directories are ignored:
+
+1. .git
+2. .next
+3. node_modules
+4. vendor
+5. Log files and temporary files
+
+You can also add your own directories to ignore by passing them as a command line argument:
+
+```bash
+npx traverse-md . --ignore "dir1,dir2"
+```
+
 ### Example Output
 
 Running `traverse-md` in a Next.js project might produce the following output in your `README.md`:
