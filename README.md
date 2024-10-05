@@ -124,3 +124,16 @@ I welcome contributions to enhance `traverse-md`! Here are ways to get involved:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+# Directory Structure
+
+└── .github
+    └── workflows
+        ├── npm-publish.yml
+├── .gitignore
+├── index.js
+├── package-lock.json
+├── package.json
+├── README.md
+
+# End Directory Structure

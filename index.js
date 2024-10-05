@@ -30,17 +30,31 @@ function generateDirectoryStructure(dirPath, ignoreDirs) {
       .readdirSync(currentPath)
       .filter((item) => !ignoreDirs.includes(item));
 
-    items.forEach((item, index) => {
+    const directories = [];
+    const files = [];
+
+    items.forEach((item) => {
       const itemPath = path.join(currentPath, item);
-      const isLast = index === items.length - 1;
+      if (fs.statSync(itemPath).isDirectory()) {
+        directories.push(item);
+      } else {
+        files.push(item);
+      }
+    });
+
+    // Output directories first
+    directories.forEach((item, index) => {
+      const isLast = index === directories.length - 1;
       const prefixSymbol = isLast ? "└── " : "├── ";
       const childPrefix = isLast ? "    " : "│   ";
 
       structure.push(prefix + prefixSymbol + item);
+      traverse(path.join(currentPath, item), prefix + childPrefix);
+    });
 
-      if (fs.statSync(itemPath).isDirectory()) {
-        traverse(itemPath, prefix + childPrefix);
-      }
+    // Then output files
+    files.forEach((item) => {
+      structure.push(prefix + "├── " + item);
     });
   }
 
