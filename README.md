@@ -87,7 +87,7 @@ my-nextjs-app/
 
 ## Contributing
 
-We welcome contributions to enhance `traverse-md`! Here are ways to get involved:
+I welcome contributions to enhance `traverse-md`! Here are ways to get involved:
 
 1. **Report issues**: If you find bugs, report them on the GitHub issues page.
 2. **Submit PRs**: Fork the repository and submit pull requests for improvements.
