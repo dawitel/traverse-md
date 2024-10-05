@@ -1,0 +1,24 @@
+{
+  "name": "traverse-md",
+  "version": "1.0.0",
+  "description": "a command line tool to get the folder structure of your project for your readme file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "traverse-md": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/dawitel/traverse-md"
+  },
+  "keywords": [
+    "CLI",
+    "readme",
+    "npm",
+    "package"
+  ],
+  "author": "dawitel",
+  "license": "MIT"
+}
